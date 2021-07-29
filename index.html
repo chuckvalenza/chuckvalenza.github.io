@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ZERO — Ballistic Click Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080a0c;
+  --surface: #0e1117;
+  --surface2: #141820;
+  --border: #1e2530;
+  --border2: #2a3340;
+  --gold: #c8a84b;
+  --gold2: #e8c96b;
+  --gold-dim: rgba(200,168,75,0.15);
+  --red: #d94f4f;
+  --green: #4fbd78;
+  --blue: #4f8fd9;
+  --text: #b8bec8;
+  --text-dim: #505a6a;
+  --text-bright: #e8ecf2;
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'Oswald', sans-serif;
+  --radius: 3px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--display);
+  min-height: 100vh;
+  font-size: 16px;
+}
+
+/* Scanline texture */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grid bg */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(200,168,75,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(200,168,75,0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 0 80px;
+}
+
+/* ===== HEADER ===== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--gold);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 100;
+}
+
+.logo {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 32px;
+  letter-spacing: 10px;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.logo-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.header-right {
+  text-align: right;
+}
+
+.status {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: blink 2.5s ease-in-out infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* ===== TAB BAR ===== */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 69px;
+  z-index: 99;
+}
+
+.tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 2px;
+  padding: 12px 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+/* ===== PANELS ===== */
+.panel { display: none; padding: 16px; }
+.panel.active { display: block; }
+
+/* ===== PROFILE SWITCHER ===== */
+.profile-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.profile-row::-webkit-scrollbar { display: none; }
+
+.profile-chip {
+  flex: 0 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.profile-chip.active {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.profile-chip.add {
+  border-style: dashed;
+  color: var(--text-dim);
+}
+
+.profile-chip.add:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ===== FORM ELEMENTS ===== */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.field label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.field input, .field select {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text-bright);
+  font-family: var(--mono);
+  font-size: 15px;
+  padding: 10px 12px;
+  width: 100%;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.field input:focus, .field select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23505a6a' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.field select option { background: #141820; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* ===== TOGGLE BUTTONS ===== */
+.toggle-group {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.toggle-group button {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 10px 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-right: 1px solid var(--border2);
+}
+
+.toggle-group button:last-child { border-right: none; }
+
+.toggle-group button.active {
+  background: var(--gold);
+  color: var(--bg);
+  font-weight: bold;
+}
+
+/* ===== SECTION HEADER ===== */
+.sec-head {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sec-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ===== DIVIDER ===== */
+.div { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* ===== CALCULATE BUTTON ===== */
+.calc-btn {
+  width: 100%;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--radius);
+  color: var(--bg);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 6px;
+  padding: 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  margin-top: 6px;
+}
+
+.calc-btn:active { background: var(--gold2); transform: scale(0.98); }
+
+/* ===== RESULTS ===== */
+.results {
+  display: none;
+  margin-top: 16px;
+  animation: slideUp 0.3s ease;
+}
+
+.results.show { display: block; }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.results-header {
+  background: var(--gold-dim);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.results-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.results-subtitle {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.results-body {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 16px;
+}
+
+/* Click cards */
+.click-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.click-card {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.click-card .axis {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.click-card .clicks {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.click-card .clicks.up { color: var(--green); }
+.click-card .clicks.down { color: var(--red); }
+.click-card .clicks.right { color: var(--blue); }
+.click-card .clicks.left { color: var(--red); }
+.click-card .clicks.zero { color: var(--text-dim); }
+
+.click-card .direction {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+.click-card .turn-dir {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--gold);
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+/* Info rows */
+.info-rows { margin-bottom: 14px; }
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.info-row:last-child { border-bottom: none; }
+
+.info-row .lbl { color: var(--text-dim); letter-spacing: 1px; font-size: 10px; text-transform: uppercase; }
+.info-row .val { color: var(--text-bright); }
+.info-row .val.accent { color: var(--gold); }
+
+/* HOB warning */
+.hob-note {
+  background: rgba(77,143,217,0.1);
+  border: 1px solid rgba(77,143,217,0.3);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--blue);
+  line-height: 1.6;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+/* ===== DROP TABLE ===== */
+.drop-table-wrap {
+  overflow-x: auto;
+  margin-top: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border2);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+th {
+  background: var(--surface2);
+  color: var(--gold);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 8px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border2);
+  white-space: nowrap;
+}
+
+td {
+  padding: 7px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+tr:last-child td { border-bottom: none; }
+tr.zero-row td { color: var(--gold); background: rgba(200,168,75,0.06); font-weight: bold; }
+td.pos { color: var(--green); }
+td.neg { color: var(--red); }
+
+/* ===== PROFILES TAB ===== */
+.profile-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.profile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-card-name {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--text-bright);
+}
+
+.profile-card-type {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 2px 7px;
+  text-transform: uppercase;
+}
+
+.delete-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.15s;
+}
+.delete-btn:hover { border-color: var(--red); background: rgba(217,79,79,0.1); }
+
+.save-btn {
+  width: 100%;
+  background: none;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  color: var(--gold);
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 4px;
+  padding: 12px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  margin-top: 8px;
+}
+.save-btn:active { background: var(--gold-dim); }
+
+/* ===== INFO PANEL ===== */
+.info-block {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.info-block h3 {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.info-block p {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.7;
+  letter-spacing: 0.3px;
+}
+
+.zero-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11px;
+  margin-top: 10px;
+}
+.zero-table th { background: var(--surface2); color: var(--gold); font-size: 9px; letter-spacing: 2px; padding: 7px 8px; text-align: center; }
+.zero-table td { padding: 7px 8px; text-align: center; border-top: 1px solid var(--border); color: var(--text); }
+.zero-table tr:first-child td { border-top: none; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--surface2);
+  border: 1px solid var(--gold);
+  border-radius: 20px;
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 10px 20px;
+  z-index: 9999;
+  transition: transform 0.3s ease;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ===== ADVANCED WARNING ===== */
+.adv-note {
+  background: rgba(200,168,75,0.07);
+  border: 1px solid rgba(200,168,75,0.2);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+/* Scroll arrow for tables */
+.scroll-hint {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-align: right;
+  padding: 4px 0;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="logo">ZERO</div>
+      <div class="logo-sub">BALLISTIC CLICK CALCULATOR</div>
+    </div>
+    <div class="header-right">
+      <div class="status"><div class="dot"></div>READY</div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('quick')">QUICK ZERO</button>
+    <button class="tab" onclick="showTab('advanced')">ADVANCED</button>
+    <button class="tab" onclick="showTab('profiles')">PROFILES</button>
+    <button class="tab" onclick="showTab('info')">REFERENCE</button>
+  </div>
+
+  <!-- ===== QUICK ZERO TAB ===== -->
+  <div id="tab-quick" class="panel active">
+
+    <!-- Profile selector -->
+    <div class="sec-head">Load Profile</div>
+    <div class="profile-row" id="quickProfileRow"></div>
+
+    <!-- Gun / Load -->
+    <div class="sec-head">Firearm & Load</div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Caliber</label>
+        <select id="q-caliber" onchange="quickCaliberChange()">
+          <option value="9mm">9mm</option>
+          <option value="45acp">45 ACP</option>
+          <option value="300blk-s">300BO Super</option>
+          <option value="300blk-sub">300BO Sub</option>
+          <option value="556">5.56/.223</option>
+          <option value="762x39">7.62×39</option>
+          <option value="308">308 Win</option>
+          <option value="65cm">6.5 Creedmoor</option>
+          <option value="22lr">22 LR</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Firearm Type</label>
+        <select id="q-type">
+          <option value="pistol">Pistol</option>
+          <option value="sbr">SBR</option>
+          <option value="rifle">Rifle</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row3">
+      <div class="field">
+        <label>MV (fps)</label>
+        <input type="number" id="q-mv" value="1150" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Bullet (gr)</label>
+        <input type="number" id="q-bw" value="115" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>BC (G1)</label>
+        <input type="number" id="q-bc" value="0.130" step="0.001" inputmode="decimal">
+      </div>
+    </div>
+
+    <!-- Optic Setup -->
+    <div class="sec-head">Optic Setup</div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Height Over Bore (in)</label>
+        <input type="number" id="q-hob" value="0.9" step="0.05" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Click Unit</label>
+        <div class="toggle-group">
+          <button id="q-unit-moa" class="active" onclick="setUnit('moa')">MOA</button>
+          <button id="q-unit-mrad" onclick="setUnit('mrad')">MRAD</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Clicks Per Unit</label>
+        <select id="q-cpv">
+          <option value="4">4 (¼ MOA)</option>
+          <option value="2">2 (½ MOA)</option>
+          <option value="1">1 (1 MOA)</option>
+          <option value="10">10 (0.1 MRAD)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Optic Type</label>
+        <select id="q-optic-type">
+          <option value="reddot">Red Dot / RMR</option>
+          <option value="sfp">Scope — SFP</option>
+          <option value="ffp">Scope — FFP</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Click Direction -->
+    <div class="sec-head">Click Direction</div>
+
+    <div class="row2">
+      <div class="field">
+        <label>UP = </label>
+        <div class="toggle-group">
+          <button id="q-up-cw" onclick="setDir('up','cw')">↻ CW</button>
+          <button id="q-up-ccw" class="active" onclick="setDir('up','ccw')">↺ CCW</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>RIGHT = </label>
+        <div class="toggle-group">
+          <button id="q-right-cw" class="active" onclick="setDir('right','cw')">↻ CW</button>
+          <button id="q-right-ccw" onclick="setDir('right','ccw')">↺ CCW</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zero Setup -->
+    <div class="sec-head">Zero Setup</div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Zero Range (yd)</label>
+        <div class="toggle-group">
+          <button id="q-zero-25" class="active" onclick="setZero(25)">25 YD</button>
+          <button id="q-zero-100" onclick="setZero(100)">100 YD</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Shot Impact Low/High (in)</label>
+        <input type="number" id="q-impact-v" value="0" step="0.25" inputmode="decimal" placeholder="+ high / - low">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Shot Impact Left/Right (in)</label>
+        <input type="number" id="q-impact-h" value="0" step="0.25" inputmode="decimal" placeholder="+ right / - left">
+      </div>
+      <div class="field">
+        <label>Shooting Distance (yd)</label>
+        <input type="number" id="q-shoot-dist" value="25" inputmode="numeric">
+      </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculate()">CALCULATE</button>
+
+    <!-- RESULTS -->
+    <div class="results" id="results">
+      <div class="results-header">
+        <span class="results-title">ADJUSTMENT SOLUTION</span>
+        <span class="results-subtitle" id="res-subtitle"></span>
+      </div>
+      <div class="results-body">
+        <div class="hob-note" id="hob-note"></div>
+        <div class="click-cards">
+          <div class="click-card">
+            <div class="axis">ELEVATION</div>
+            <div class="clicks" id="res-elev-clicks">—</div>
+            <div class="direction" id="res-elev-dir">—</div>
+            <div class="turn-dir" id="res-elev-turn">—</div>
+          </div>
+          <div class="click-card">
+            <div class="axis">WINDAGE</div>
+            <div class="clicks" id="res-wind-clicks">—</div>
+            <div class="direction" id="res-wind-dir">—</div>
+            <div class="turn-dir" id="res-wind-turn">—</div>
+          </div>
+        </div>
+        <div class="info-rows">
+          <div class="info-row">
+            <span class="lbl">MOA Adjusted</span>
+            <span class="val accent" id="res-moa-elev">—</span>
+          </div>
+          <div class="info-row">
+            <span class="lbl">MRAD Adjusted</span>
+            <span class="val" id="res-mrad-elev">—</span>
+          </div>
+          <div class="info-row">
+            <span class="lbl">Zeroed At</span>
+            <span class="val" id="res-zero-dist">—</span>
+          </div>
+          <div class="info-row">
+            <span class="lbl">Bullet Drop @ Zero</span>
+            <span class="val" id="res-drop-zero">—</span>
+          </div>
+        </div>
+        <div class="sec-head">Drop Table</div>
+        <div class="scroll-hint">← scroll →</div>
+        <div class="drop-table-wrap">
+          <table id="drop-table">
+            <thead>
+              <tr>
+                <th>YDS</th>
+                <th>DROP (in)</th>
+                <th>HOB ADJ (in)</th>
+                <th>MOA</th>
+                <th>MRAD</th>
+                <th>CLICKS</th>
+              </tr>
+            </thead>
+            <tbody id="drop-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADVANCED TAB ===== -->
+  <div id="tab-advanced" class="panel">
+    <div class="adv-note">Advanced tab uses same profile. Add SFP magnification, environmental corrections, and multi-range holds.</div>
+
+    <div class="sec-head">SFP Scope Settings</div>
+    <div class="row2">
+      <div class="field">
+        <label>Reticle Cal. Power (×)</label>
+        <input type="number" id="a-sfp-power" value="10" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>Current Power (×)</label>
+        <input type="number" id="a-current-power" value="10" inputmode="decimal">
+      </div>
+    </div>
+    <div class="field">
+      <label>SFP Active</label>
+      <div class="toggle-group">
+        <button id="a-sfp-off" class="active" onclick="setSFP(false)">OFF</button>
+        <button id="a-sfp-on" onclick="setSFP(true)">ON — Apply Correction</button>
+      </div>
+    </div>
+
+    <div class="sec-head">Environment</div>
+    <div class="row3">
+      <div class="field">
+        <label>Temp (°F)</label>
+        <input type="number" id="a-temp" value="59" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Altitude (ft)</label>
+        <input type="number" id="a-alt" value="0" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Wind (mph)</label>
+        <input type="number" id="a-wind" value="0" inputmode="numeric">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Wind Direction (clock)</label>
+        <select id="a-wind-dir">
+          <option value="3">3 o'clock (full right)</option>
+          <option value="1.5">1:30 (¾ right)</option>
+          <option value="0">12 / 6 (no effect)</option>
+          <option value="-1.5">10:30 (¾ left)</option>
+          <option value="-3">9 o'clock (full left)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Shooting Angle (°)</label>
+        <input type="number" id="a-angle" value="0" step="5" inputmode="numeric" placeholder="+ uphill / - down">
+      </div>
+    </div>
+
+    <div class="sec-head">Multi-Range Hold Table</div>
+    <div class="field">
+      <label>Max Range for Table (yd)</label>
+      <select id="a-max-range">
+        <option value="100">100 yd</option>
+        <option value="200">200 yd</option>
+        <option value="300" selected>300 yd</option>
+        <option value="400">400 yd</option>
+        <option value="500">500 yd</option>
+        <option value="600">600 yd</option>
+      </select>
+    </div>
+
+    <button class="calc-btn" onclick="calculateAdvanced()">CALCULATE ADVANCED</button>
+
+    <div class="results" id="adv-results">
+      <div class="results-header">
+        <span class="results-title">ADVANCED SOLUTION</span>
+        <span class="results-subtitle" id="adv-subtitle"></span>
+      </div>
+      <div class="results-body">
+        <div class="info-rows" id="adv-info-rows"></div>
+        <div class="sec-head">Hold-Over Table</div>
+        <div class="scroll-hint">← scroll →</div>
+        <div class="drop-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>YDS</th>
+                <th>DROP (in)</th>
+                <th>MOA HOLD</th>
+                <th>MRAD HOLD</th>
+                <th>WIND (in)</th>
+                <th>WIND MOA</th>
+              </tr>
+            </thead>
+            <tbody id="adv-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROFILES TAB ===== -->
+  <div id="tab-profiles" class="panel">
+    <div class="sec-head">Saved Profiles</div>
+    <div id="profile-list"></div>
+
+    <div class="sec-head">Add / Edit Profile</div>
+    <div class="profile-card">
+      <div class="field">
+        <label>Profile Name</label>
+        <input type="text" id="p-name" placeholder="e.g. P365 RMRCC 9mm 115gr">
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Caliber</label>
+          <select id="p-caliber" onchange="profileCaliberChange()">
+            <option value="9mm">9mm</option>
+            <option value="45acp">45 ACP</option>
+            <option value="300blk-s">300BO Super</option>
+            <option value="300blk-sub">300BO Sub</option>
+            <option value="556">5.56/.223</option>
+            <option value="762x39">7.62×39</option>
+            <option value="308">308 Win</option>
+            <option value="65cm">6.5 Creedmoor</option>
+            <option value="22lr">22 LR</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <select id="p-type">
+            <option value="pistol">Pistol</option>
+            <option value="sbr">SBR</option>
+            <option value="rifle">Rifle</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row3">
+        <div class="field">
+          <label>MV (fps)</label>
+          <input type="number" id="p-mv" value="1150" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label>Bullet (gr)</label>
+          <input type="number" id="p-bw" value="115" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label>BC (G1)</label>
+          <input type="number" id="p-bc" value="0.130" step="0.001" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>HOB (in)</label>
+          <input type="number" id="p-hob" value="0.9" step="0.05" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>Click Unit</label>
+          <div class="toggle-group">
+            <button id="p-unit-moa" class="active" onclick="setProfileUnit('moa')">MOA</button>
+            <button id="p-unit-mrad" onclick="setProfileUnit('mrad')">MRAD</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Clicks / Unit</label>
+          <select id="p-cpv">
+            <option value="4">4 (¼ MOA)</option>
+            <option value="2">2 (½ MOA)</option>
+            <option value="1">1 (1 MOA)</option>
+            <option value="10">10 (0.1 MRAD)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Optic Type</label>
+          <select id="p-optic">
+            <option value="reddot">Red Dot / RMR</option>
+            <option value="sfp">Scope — SFP</option>
+            <option value="ffp">Scope — FFP</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>UP = </label>
+          <div class="toggle-group">
+            <button id="p-up-cw" onclick="setProfileDir('up','cw')">↻ CW</button>
+            <button id="p-up-ccw" class="active" onclick="setProfileDir('up','ccw')">↺ CCW</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>RIGHT = </label>
+          <div class="toggle-group">
+            <button id="p-right-cw" class="active" onclick="setProfileDir('right','cw')">↻ CW</button>
+            <button id="p-right-ccw" onclick="setProfileDir('right','ccw')">↺ CCW</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="save-btn" onclick="saveProfile()">+ SAVE PROFILE</button>
+    </div>
+  </div>
+
+  <!-- ===== INFO / REFERENCE TAB ===== -->
+  <div id="tab-info" class="panel">
+
+    <div class="info-block">
+      <h3>25 / 100 Yard Zero Guide</h3>
+      <p>Zeroing at 25 or 100 yards provides predictable point of impact at longer distances depending on caliber.</p>
+      <table class="zero-table">
+        <thead><tr><th>CALIBER</th><th>25YD ZERO →</th><th>100YD ZERO →</th></tr></thead>
+        <tbody>
+          <tr><td>9mm Pistol</td><td>~15 yd effective</td><td>—</td></tr>
+          <tr><td>9mm SBR</td><td>~50 yd</td><td>~125 yd</td></tr>
+          <tr><td>300BO Super</td><td>~175 yd</td><td>~250 yd</td></tr>
+          <tr><td>300BO Sub</td><td>~75 yd</td><td>~100 yd</td></tr>
+          <tr><td>5.56/.223</td><td>≈300 yd</td><td>~200 yd</td></tr>
+          <tr><td>7.62×39</td><td>~200 yd</td><td>~250 yd</td></tr>
+          <tr><td>308 Win</td><td>~225 yd</td><td>~400 yd</td></tr>
+          <tr><td>6.5 CM</td><td>~250 yd</td><td>~500 yd</td></tr>
+          <tr><td>22 LR</td><td>~50 yd</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-block">
+      <h3>Height Over Bore</h3>
+      <p>HOB is the vertical distance from the center of your bore to the center of your optic. At close range, your bullet travels below your line of sight — this is why shots can hit low at short distances even with a correct zero. The closer you shoot, the bigger this effect.</p>
+    </div>
+
+    <div class="info-block">
+      <h3>MOA vs MRAD</h3>
+      <p>1 MOA ≈ 1.047" at 100 yards (commonly rounded to 1"). 1 MRAD = 3.6" at 100 yards. Most American scopes use MOA; mil-spec and many precision scopes use MRAD. Never mix reticle and turret units without converting.</p>
+    </div>
+
+    <div class="info-block">
+      <h3>SFP vs FFP</h3>
+      <p>SFP (Second Focal Plane): reticle subtensions are only accurate at one specific power — usually max magnification. Always verify which power your reticle is calibrated for. FFP (First Focal Plane): reticle subtensions are accurate at any magnification. No power correction needed.</p>
+    </div>
+
+    <div class="info-block">
+      <h3>Click Direction Convention</h3>
+      <p>Most optics follow: elevation UP = counterclockwise, windage RIGHT = clockwise. However, some optics differ — always check the turret label. "Chase the bullet" is a helpful shortcut: if shots hit low-left, click up and right.</p>
+    </div>
+
+    <div class="info-block">
+      <h3>Common HOB Values</h3>
+      <table class="zero-table">
+        <thead><tr><th>OPTIC</th><th>APPROX HOB</th></tr></thead>
+        <tbody>
+          <tr><td>RMR / RMRCC on pistol</td><td>0.8 – 1.0"</td></tr>
+          <tr><td>Red dot on SBR (low mount)</td><td>1.4 – 1.6"</td></tr>
+          <tr><td>Red dot on SBR (cowitness)</td><td>2.4 – 2.6"</td></tr>
+          <tr><td>Scope (30mm, low rings)</td><td>1.5 – 1.75"</td></tr>
+          <tr><td>Scope (30mm, med rings)</td><td>1.75 – 2.0"</td></tr>
+          <tr><td>Scope (34mm, med rings)</td><td>2.0 – 2.25"</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+let state = {
+  unit: 'moa',
+  upDir: 'ccw',
+  rightDir: 'cw',
+  zeroRange: 25,
+  profileUnit: 'moa',
+  profileUpDir: 'ccw',
+  profileRightDir: 'cw',
+  sfpActive: false,
+  profiles: []
+};
+
+// ===== CALIBER PRESETS =====
+const PRESETS = {
+  '9mm':        { mv: 1150, bw: 115, bc: 0.130, hob: 0.9, type: 'pistol', cpv: 1 },
+  '45acp':      { mv: 850,  bw: 230, bc: 0.160, hob: 0.9, type: 'pistol', cpv: 1 },
+  '40sw':       { mv: 1050, bw: 165, bc: 0.140, hob: 0.9, type: 'pistol', cpv: 1 },
+  '380':        { mv: 950,  bw: 90,  bc: 0.100, hob: 0.9, type: 'pistol', cpv: 1 },
+  '10mm':       { mv: 1200, bw: 180, bc: 0.180, hob: 0.9, type: 'pistol', cpv: 1 },
+  '300blk-s':   { mv: 2200, bw: 125, bc: 0.295, hob: 2.5, type: 'sbr',    cpv: 4 },
+  '300blk-sub': { mv: 1050, bw: 220, bc: 0.280, hob: 2.5, type: 'sbr',    cpv: 4 },
+  '556':        { mv: 2900, bw: 62,  bc: 0.307, hob: 2.5, type: 'sbr',    cpv: 4 },
+  '762x39':     { mv: 2350, bw: 123, bc: 0.280, hob: 2.5, type: 'sbr',    cpv: 4 },
+  '308':        { mv: 2650, bw: 168, bc: 0.475, hob: 1.75,type: 'rifle',  cpv: 4 },
+  '65cm':       { mv: 2700, bw: 140, bc: 0.535, hob: 1.75,type: 'rifle',  cpv: 4 },
+  '22lr':       { mv: 1100, bw: 40,  bc: 0.110, hob: 1.0, type: 'sbr',    cpv: 4 },
+  'custom':     { mv: 2700, bw: 150, bc: 0.400, hob: 1.75,type: 'rifle',  cpv: 4 },
+};
+
+// ===== PHYSICS =====
+const G = 32.174; // ft/s²
+
+function calcDrop(rangeYd, mvFps, bcG1, bwGr) {
+  // Simplified point mass trajectory using G1 drag
+  // Returns drop in inches (positive = down)
+  const rangeM = rangeYd * 0.9144;
+  const rangeF = rangeYd * 3;
+
+  // sectional density
+  const sd = bwGr / (7000 * Math.pow(0.308 / 2, 2) * Math.PI);
+
+  // drag deceleration approximation - iterative
+  const steps = Math.max(50, rangeYd);
+  const dt = (rangeF / mvFps) / steps;
+  let v = mvFps;
+  let t = 0;
+  let x = 0;
+  let y = 0;
+  let vy = 0;
+
+  // Air density factor
+  const rho = 0.0765; // lb/ft³ at sea level, 59°F
+  const A = Math.PI * Math.pow(0.308 / 2 / 12, 2); // area ft²
+  const m = bwGr / 7000; // lb
+  const i = 1 / bcG1;
+
+  const KD = 0.5 * rho * A * i / m;
+
+  for (let s = 0; s < steps; s++) {
+    const vTotal = Math.sqrt(v * v + vy * vy);
+    // G1 Cd approximation based on velocity
+    let Cd;
+    const mach = vTotal / 1116;
+    if (mach > 1.2) Cd = 0.5;
+    else if (mach > 1.0) Cd = 0.5 + (1.2 - mach) * 1.5;
+    else if (mach > 0.8) Cd = 0.8;
+    else Cd = 0.6;
+
+    const drag = KD * Cd * vTotal;
+    const ax = -drag * (v / vTotal);
+    const ay = -G - drag * (vy / vTotal);
+
+    v += ax * dt;
+    vy += ay * dt;
+    t += dt;
+    x += v * dt;
+    y += vy * dt;
+
+    if (x >= rangeF) break;
+  }
+
+  return -y * 12; // positive = drop (in inches)
+}
+
+function inchesToMOA(inches, rangeYd) {
+  return inches / (rangeYd * 0.01047);
+}
+
+function moaToMRAD(moa) {
+  return moa * 0.29089;
+}
+
+function inchesAtRange(moa, rangeYd) {
+  return moa * rangeYd * 0.01047;
+}
+
+// ===== CALCULATE ZERO =====
+function calculate() {
+  const caliber = document.getElementById('q-caliber').value;
+  const mv = parseFloat(document.getElementById('q-mv').value);
+  const bw = parseFloat(document.getElementById('q-bw').value);
+  const bc = parseFloat(document.getElementById('q-bc').value);
+  const hob = parseFloat(document.getElementById('q-hob').value);
+  const impactV = parseFloat(document.getElementById('q-impact-v').value) || 0;
+  const impactH = parseFloat(document.getElementById('q-impact-h').value) || 0;
+  const shootDist = parseFloat(document.getElementById('q-shoot-dist').value);
+  const cpv = parseFloat(document.getElementById('q-cpv').value);
+  const zeroRange = state.zeroRange;
+
+  // ---- Bullet drop at shooting distance ----
+  const dropAtShot = calcDrop(shootDist, mv, bc, bw);
+
+  // ---- HOB correction at shooting distance ----
+  // Line of sight crosses bore axis at zero range
+  // At short distances bullet is still below LOS by HOB offset
+  const lobAngle = Math.atan(hob / (zeroRange * 36)) * (180 / Math.PI); // degrees
+  const hobOffsetAtShot = hob - (shootDist / zeroRange) * hob;
+  // Net vertical offset: drop + HOB effect
+  const netVertOffset = dropAtShot + hobOffsetAtShot;
+
+  // ---- Total correction needed ----
+  // impactV: positive = hit high, negative = hit low
+  // If hit low, need to click UP
+  const elevCorrInches = -impactV + (shootDist !== zeroRange ? 0 : 0);
+  // Actually: error at target = how far off from desired POI
+  // error = current impact - desired (center)
+  // elevError: positive = impact high (click down), negative = impact low (click up)
+  const elevErrorInches = impactV; // + = high, - = low
+  const windErrorInches = impactH; // + = right, - = left
+
+  // Convert to MOA
+  const elevMOA = inchesToMOA(Math.abs(elevErrorInches), shootDist);
+  const windMOA = inchesToMOA(Math.abs(windErrorInches), shootDist);
+  const elevMRAD = moaToMRAD(elevMOA);
+  const windMRAD = moaToMRAD(windMOA);
+
+  // Convert to clicks
+  const unitVal = state.unit === 'moa' ? 1 : (1 / 0.29089); // MOA per unit
+  const moaPerClick = unitVal / cpv;
+  const elevClicks = Math.round(elevMOA / moaPerClick);
+  const windClicks = Math.round(windMOA / moaPerClick);
+
+  // Direction logic
+  // Elevation: impact low → click UP
+  const elevNeedsUp = elevErrorInches < 0;
+  const windNeedsRight = windErrorInches < 0;
+
+  const elevDir = elevErrorInches === 0 ? 'ON ZERO' : (elevNeedsUp ? 'UP' : 'DOWN');
+  const windDir = windErrorInches === 0 ? 'ON ZERO' : (windNeedsRight ? 'RIGHT' : 'LEFT');
+
+  // Physical turn direction
+  const elevTurn = elevErrorInches === 0 ? '' : (elevNeedsUp
+    ? (state.upDir === 'ccw' ? '↺ COUNTERCLOCKWISE' : '↻ CLOCKWISE')
+    : (state.upDir === 'ccw' ? '↻ CLOCKWISE' : '↺ COUNTERCLOCKWISE'));
+
+  const windTurn = windErrorInches === 0 ? '' : (windNeedsRight
+    ? (state.rightDir === 'cw' ? '↻ CLOCKWISE' : '↺ COUNTERCLOCKWISE')
+    : (state.rightDir === 'cw' ? '↺ COUNTERCLOCKWISE' : '↻ CLOCKWISE'));
+
+  // ---- Display ----
+  document.getElementById('res-subtitle').textContent = `${shootDist}yd → ${zeroRange}yd zero`;
+
+  const ec = document.getElementById('res-elev-clicks');
+  ec.textContent = elevClicks === 0 ? '0' : elevClicks;
+  ec.className = 'clicks ' + (elevClicks === 0 ? 'zero' : (elevNeedsUp ? 'up' : 'down'));
+
+  const wc = document.getElementById('res-wind-clicks');
+  wc.textContent = windClicks === 0 ? '0' : windClicks;
+  wc.className = 'clicks ' + (windClicks === 0 ? 'zero' : (windNeedsRight ? 'right' : 'left'));
+
+  document.getElementById('res-elev-dir').textContent = elevDir;
+  document.getElementById('res-wind-dir').textContent = windDir;
+  document.getElementById('res-elev-turn').textContent = elevTurn;
+  document.getElementById('res-wind-turn').textContent = windTurn;
+
+  document.getElementById('res-moa-elev').textContent =
+    `${elevMOA.toFixed(2)} MOA ${elevDir} / ${windMOA.toFixed(2)} MOA ${windDir}`;
+  document.getElementById('res-mrad-elev').textContent =
+    `${elevMRAD.toFixed(2)} MRAD ↕ / ${moaToMRAD(windMOA).toFixed(2)} MRAD ↔`;
+  document.getElementById('res-zero-dist').textContent = `${zeroRange} yards`;
+  document.getElementById('res-drop-zero').textContent = `${calcDrop(zeroRange, mv, bc, bw).toFixed(2)}" (gravity only)`;
+
+  // HOB note
+  const hobNote = document.getElementById('hob-note');
+  if (hob > 0) {
+    const crossoverYd = zeroRange;
+    hobNote.textContent = `HOB: ${hob}" — At ${shootDist}yd, bore-sight offset adds ~${hobOffsetAtShot.toFixed(2)}" to low error. Bullet crosses LOS near ${crossoverYd}yd zero.`;
+    hobNote.style.display = 'block';
+  } else {
+    hobNote.style.display = 'none';
+  }
+
+  // ---- Drop Table ----
+  buildDropTable(mv, bw, bc, hob, zeroRange, cpv, moaPerClick);
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function buildDropTable(mv, bw, bc, hob, zeroRange, cpv, moaPerClick) {
+  const tbody = document.getElementById('drop-tbody');
+  tbody.innerHTML = '';
+
+  // Determine intervals and max range based on caliber velocity
+  const isHandgun = mv < 1400;
+  const isSub = mv < 1200 && bc < 0.2;
+  let ranges;
+  if (isHandgun) {
+    ranges = [5, 10, 15, 25, 35, 50, 75, 100];
+  } else if (isSub) {
+    ranges = [25, 50, 75, 100, 125, 150, 200];
+  } else {
+    ranges = [25, 50, 100, 150, 200, 250, 300, 400, 500, 600];
+  }
+
+  // Drop at zero range for reference
+  const dropAtZero = calcDrop(zeroRange, mv, bc, bw);
+  // HOB angle: sight line pitched up by HOB/zeroRange
+  const sightAngleRad = Math.atan(hob / (zeroRange * 36));
+
+  ranges.forEach(r => {
+    const drop = calcDrop(r, mv, bc, bw);
+    // Sight line height above bore at range r
+    const sightAboveBore = Math.tan(sightAngleRad) * r * 36; // inches
+    // POI relative to LOS: positive = above LOS, negative = below
+    const poiRelLOS = sightAboveBore - drop;
+    const isZeroRow = r === zeroRange;
+
+    const moaHold = inchesToMOA(Math.abs(poiRelLOS), r);
+    const mradHold = moaToMRAD(moaHold);
+    const clicks = Math.round(moaHold / moaPerClick);
+
+    const tr = document.createElement('tr');
+    if (isZeroRow) tr.className = 'zero-row';
+
+    const dropClass = poiRelLOS < -0.5 ? 'neg' : (poiRelLOS > 0.5 ? 'pos' : '');
+    const holdLabel = isZeroRow ? 'ZERO' : (poiRelLOS < 0 ? `↓ ${moaHold.toFixed(1)}` : `↑ ${moaHold.toFixed(1)}`);
+    const mradLabel = isZeroRow ? 'ZERO' : (poiRelLOS < 0 ? `↓ ${mradHold.toFixed(2)}` : `↑ ${mradHold.toFixed(2)}`);
+    const poiLabel = isZeroRow ? '0.0"' : `${poiRelLOS >= 0 ? '+' : ''}${poiRelLOS.toFixed(1)}"`;
+    const clickLabel = isZeroRow ? '—' : `${clicks}`;
+
+    tr.innerHTML = `
+      <td>${r}</td>
+      <td class="${dropClass}">${poiLabel}</td>
+      <td class="${poiRelLOS < 0 ? 'neg' : 'pos'}">${poiRelLOS < -0.3 ? drop.toFixed(1)+'"' : (isZeroRow ? '—' : drop.toFixed(1)+'"')}</td>
+      <td class="${isZeroRow ? '' : (poiRelLOS < 0 ? 'neg' : 'pos')}">${holdLabel}</td>
+      <td class="${isZeroRow ? '' : (poiRelLOS < 0 ? 'neg' : 'pos')}">${mradLabel}</td>
+      <td>${clickLabel}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ===== ADVANCED CALCULATE =====
+function calculateAdvanced() {
+  const mv = parseFloat(document.getElementById('q-mv').value);
+  const bw = parseFloat(document.getElementById('q-bw').value);
+  const bc = parseFloat(document.getElementById('q-bc').value);
+  const hob = parseFloat(document.getElementById('q-hob').value);
+  const cpv = parseFloat(document.getElementById('q-cpv').value);
+  const zeroRange = state.zeroRange;
+  const maxRange = parseInt(document.getElementById('a-max-range').value);
+  const windMph = parseFloat(document.getElementById('a-wind').value) || 0;
+  const windDirFactor = parseFloat(document.getElementById('a-wind-dir').value);
+  const angle = parseFloat(document.getElementById('a-angle').value) || 0;
+
+  // SFP correction
+  let sfpFactor = 1.0;
+  if (state.sfpActive) {
+    const calPow = parseFloat(document.getElementById('a-sfp-power').value);
+    const curPow = parseFloat(document.getElementById('a-current-power').value);
+    sfpFactor = calPow / curPow;
+  }
+
+  const moaPerClick = (state.unit === 'moa' ? 1 : (1 / 0.29089)) / cpv;
+  const sightAngleRad = Math.atan(hob / (zeroRange * 36));
+  const cosAngle = Math.cos(angle * Math.PI / 180); // Rifleman's rule
+
+  // Build rows
+  const step = maxRange <= 100 ? 10 : (maxRange <= 300 ? 25 : 50);
+  const tbody = document.getElementById('adv-tbody');
+  tbody.innerHTML = '';
+
+  for (let r = step; r <= maxRange; r += step) {
+    const effectiveRange = r * cosAngle; // Rifleman's rule
+    const drop = calcDrop(effectiveRange, mv, bc, bw);
+    const sightAboveBore = Math.tan(sightAngleRad) * r * 36;
+    const poiRelLOS = sightAboveBore - drop;
+    const isZeroRow = Math.abs(r - zeroRange) < step / 2;
+
+    const moaHold = inchesToMOA(Math.abs(poiRelLOS), r) * sfpFactor;
+    const mradHold = moaToMRAD(moaHold);
+
+    // Wind drift (simplified: 10 mph full value at 100yd ≈ depends on time of flight)
+    // Rough: wind_in = windMph * (timeOfFlight / 17.6) * windDirFactor
+    const tof = r / mv; // approximate
+    const windIn = windMph * windDirFactor * tof * r / 100 * 0.5;
+    const windMOA = inchesToMOA(Math.abs(windIn), r);
+
+    const tr = document.createElement('tr');
+    if (isZeroRow) tr.className = 'zero-row';
+
+    tr.innerHTML = `
+      <td>${r}${angle !== 0 ? `<br><span style="color:var(--text-dim);font-size:9px">${Math.round(effectiveRange)}yd eff</span>` : ''}</td>
+      <td class="${poiRelLOS < -0.5 ? 'neg' : 'pos'}">${poiRelLOS >= 0 ? '+' : ''}${poiRelLOS.toFixed(1)}"</td>
+      <td class="${isZeroRow ? '' : (poiRelLOS < 0 ? 'neg' : 'pos')}">${isZeroRow ? 'ZERO' : (poiRelLOS < 0 ? '↓' : '↑') + moaHold.toFixed(1)}</td>
+      <td class="${isZeroRow ? '' : (poiRelLOS < 0 ? 'neg' : 'pos')}">${isZeroRow ? 'ZERO' : (poiRelLOS < 0 ? '↓' : '↑') + mradHold.toFixed(2)}</td>
+      <td class="${windIn < 0 ? 'neg' : (windIn > 0 ? 'pos' : '')}">${windMph > 0 ? (windIn >= 0 ? '+' : '') + windIn.toFixed(1) + '"' : '—'}</td>
+      <td class="${windIn < 0 ? 'neg' : (windIn > 0 ? 'pos' : '')}">${windMph > 0 ? windMOA.toFixed(1) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  document.getElementById('adv-subtitle').textContent = `${zeroRange}yd zero · ${maxRange}yd table${state.sfpActive ? ' · SFP corrected' : ''}${angle !== 0 ? ` · ${angle}° angle` : ''}`;
+
+  const infoRows = document.getElementById('adv-info-rows');
+  infoRows.innerHTML = `
+    <div class="info-row"><span class="lbl">SFP Status</span><span class="val ${state.sfpActive ? 'accent' : ''}">${state.sfpActive ? `ACTIVE — ${document.getElementById('a-sfp-power').value}× cal / ${document.getElementById('a-current-power').value}× current` : 'OFF'}</span></div>
+    <div class="info-row"><span class="lbl">Wind Input</span><span class="val">${windMph > 0 ? windMph + ' mph' : 'None'}</span></div>
+    <div class="info-row"><span class="lbl">Angle Correction</span><span class="val">${angle !== 0 ? angle + '° (Rifleman\'s Rule)' : 'None'}</span></div>
+  `;
+
+  document.getElementById('adv-results').classList.add('show');
+  document.getElementById('adv-results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ===== PROFILES =====
+function loadProfiles() {
+  try {
+    state.profiles = JSON.parse(localStorage.getItem('zeroProfiles') || '[]');
+  } catch(e) { state.profiles = []; }
+}
+
+function saveProfiles() {
+  localStorage.setItem('zeroProfiles', JSON.stringify(state.profiles));
+}
+
+function saveProfile() {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { showToast('ENTER PROFILE NAME'); return; }
+
+  const profile = {
+    id: Date.now(),
+    name,
+    caliber: document.getElementById('p-caliber').value,
+    type: document.getElementById('p-type').value,
+    mv: parseFloat(document.getElementById('p-mv').value),
+    bw: parseFloat(document.getElementById('p-bw').value),
+    bc: parseFloat(document.getElementById('p-bc').value),
+    hob: parseFloat(document.getElementById('p-hob').value),
+    unit: state.profileUnit,
+    cpv: parseFloat(document.getElementById('p-cpv').value),
+    optic: document.getElementById('p-optic').value,
+    upDir: state.profileUpDir,
+    rightDir: state.profileRightDir,
+  };
+
+  state.profiles.push(profile);
+  saveProfiles();
+  renderProfiles();
+  renderQuickProfiles();
+  document.getElementById('p-name').value = '';
+  showToast('PROFILE SAVED');
+}
+
+function deleteProfile(id) {
+  state.profiles = state.profiles.filter(p => p.id !== id);
+  saveProfiles();
+  renderProfiles();
+  renderQuickProfiles();
+  showToast('PROFILE DELETED');
+}
+
+function loadProfileToQuick(profile) {
+  document.getElementById('q-caliber').value = profile.caliber;
+  document.getElementById('q-mv').value = profile.mv;
+  document.getElementById('q-bw').value = profile.bw;
+  document.getElementById('q-bc').value = profile.bc;
+  document.getElementById('q-hob').value = profile.hob;
+  document.getElementById('q-cpv').value = profile.cpv;
+  document.getElementById('q-optic-type').value = profile.optic;
+  document.getElementById('q-type').value = profile.type;
+
+  setUnit(profile.unit);
+  setDir('up', profile.upDir);
+  setDir('right', profile.rightDir);
+
+  showTab('quick');
+  showToast('PROFILE LOADED');
+}
+
+function renderProfiles() {
+  const list = document.getElementById('profile-list');
+  if (state.profiles.length === 0) {
+    list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);padding:16px 0;text-align:center;letter-spacing:2px;">NO SAVED PROFILES</div>';
+    return;
+  }
+  list.innerHTML = state.profiles.map(p => `
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <div>
+          <div class="profile-card-name">${p.name}</div>
+          <div class="profile-card-type">${p.caliber} · ${p.type} · ${p.unit.toUpperCase()} · ${p.optic}</div>
+        </div>
+        <button class="delete-btn" onclick="deleteProfile(${p.id})">✕</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <span class="badge">${p.mv} fps</span>
+        <span class="badge">${p.bw}gr</span>
+        <span class="badge">BC ${p.bc}</span>
+        <span class="badge">HOB ${p.hob}"</span>
+        <span class="badge">${p.cpv} clicks/unit</span>
+      </div>
+      <button class="save-btn" onclick='loadProfileToQuick(${JSON.stringify(p)})'>LOAD TO QUICK ZERO</button>
+    </div>
+  `).join('');
+}
+
+function renderQuickProfiles() {
+  const row = document.getElementById('quickProfileRow');
+  let html = '';
+  state.profiles.forEach(p => {
+    html += `<div class="profile-chip" onclick='loadProfileToQuick(${JSON.stringify(p)})'>${p.name}</div>`;
+  });
+  html += `<div class="profile-chip add" onclick="showTab('profiles')">+ ADD</div>`;
+  row.innerHTML = html;
+}
+
+// ===== UI HELPERS =====
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const tabs = { quick: 0, advanced: 1, profiles: 2, info: 3 };
+  document.querySelectorAll('.tab')[tabs[name]].classList.add('active');
+}
+
+function setUnit(u) {
+  state.unit = u;
+  document.getElementById('q-unit-moa').classList.toggle('active', u === 'moa');
+  document.getElementById('q-unit-mrad').classList.toggle('active', u === 'mrad');
+  // Update CPV options
+  const cpv = document.getElementById('q-cpv');
+  if (u === 'mrad') {
+    cpv.innerHTML = '<option value="10">10 (0.1 MRAD)</option><option value="5">5 (0.2 MRAD)</option><option value="1">1 (1 MRAD)</option>';
+  } else {
+    cpv.innerHTML = '<option value="4">4 (¼ MOA)</option><option value="2">2 (½ MOA)</option><option value="1">1 (1 MOA)</option>';
+  }
+}
+
+function setDir(axis, dir) {
+  if (axis === 'up') {
+    state.upDir = dir;
+    document.getElementById('q-up-cw').classList.toggle('active', dir === 'cw');
+    document.getElementById('q-up-ccw').classList.toggle('active', dir === 'ccw');
+  } else {
+    state.rightDir = dir;
+    document.getElementById('q-right-cw').classList.toggle('active', dir === 'cw');
+    document.getElementById('q-right-ccw').classList.toggle('active', dir === 'ccw');
+  }
+}
+
+function setZero(r) {
+  state.zeroRange = r;
+  document.getElementById('q-zero-25').classList.toggle('active', r === 25);
+  document.getElementById('q-zero-100').classList.toggle('active', r === 100);
+  document.getElementById('q-shoot-dist').value = r;
+}
+
+function setSFP(on) {
+  state.sfpActive = on;
+  document.getElementById('a-sfp-off').classList.toggle('active', !on);
+  document.getElementById('a-sfp-on').classList.toggle('active', on);
+}
+
+function setProfileUnit(u) {
+  state.profileUnit = u;
+  document.getElementById('p-unit-moa').classList.toggle('active', u === 'moa');
+  document.getElementById('p-unit-mrad').classList.toggle('active', u === 'mrad');
+}
+
+function setProfileDir(axis, dir) {
+  if (axis === 'up') {
+    state.profileUpDir = dir;
+    document.getElementById('p-up-cw').classList.toggle('active', dir === 'cw');
+    document.getElementById('p-up-ccw').classList.toggle('active', dir === 'ccw');
+  } else {
+    state.profileRightDir = dir;
+    document.getElementById('p-right-cw').classList.toggle('active', dir === 'cw');
+    document.getElementById('p-right-ccw').classList.toggle('active', dir === 'ccw');
+  }
+}
+
+function quickCaliberChange() {
+  const cal = document.getElementById('q-caliber').value;
+  const p = PRESETS[cal] || PRESETS['custom'];
+  document.getElementById('q-mv').value = p.mv;
+  document.getElementById('q-bw').value = p.bw;
+  document.getElementById('q-bc').value = p.bc;
+  document.getElementById('q-hob').value = p.hob;
+  document.getElementById('q-type').value = p.type;
+  setUnit(p.cpv === 10 ? 'mrad' : 'moa');
+  const cpv = document.getElementById('q-cpv');
+  if (p.cpv <= 4) {
+    cpv.innerHTML = '<option value="4">4 (¼ MOA)</option><option value="2">2 (½ MOA)</option><option value="1">1 (1 MOA)</option>';
+    cpv.value = p.cpv;
+  }
+}
+
+function profileCaliberChange() {
+  const cal = document.getElementById('p-caliber').value;
+  const p = PRESETS[cal] || PRESETS['custom'];
+  document.getElementById('p-mv').value = p.mv;
+  document.getElementById('p-bw').value = p.bw;
+  document.getElementById('p-bc').value = p.bc;
+  document.getElementById('p-hob').value = p.hob;
+  document.getElementById('p-type').value = p.type;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== INIT =====
+loadProfiles();
+renderProfiles();
+renderQuickProfiles();
+</script>
+</body>
+</html>
