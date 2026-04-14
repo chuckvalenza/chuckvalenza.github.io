@@ -1,0 +1,104 @@
+[
+  {
+    "id": "builtin-p365-rmrcc",
+    "name": "P365 Nitron · RMRCC · Crit Duty +P",
+    "caliber": "9mm",
+    "type": "subcompact",
+    "mv": 1020,
+    "bw": 135,
+    "bc": 0.155,
+    "hob": 0.875,
+    "unit": "moa",
+    "cpv": 1,
+    "optic": "reddot",
+    "upDir": "ccw",
+    "rightDir": "cw",
+    "builtin": true,
+    "notes": "Sig P365 Nitron Compact · 3.1\" barrel · Hornady Critical Duty 135gr +P FlexLock · RMRcc milled directly into slide · MV adjusted from 4\" test barrel to 3.1\" barrel"
+  }
+  ,{
+    "id": "builtin-p226-legion-rmr",
+    "name": "P226 Legion · RMR · Crit Duty +P",
+    "caliber": "9mm",
+    "type": "pistol",
+    "mv": 1125,
+    "bw": 135,
+    "bc": 0.155,
+    "hob": 1.6,
+    "unit": "moa",
+    "cpv": 1,
+    "optic": "reddot",
+    "upDir": "ccw",
+    "rightDir": "cw",
+    "builtin": true,
+    "notes": "Sig P226 Legion · 4.4\" SilencerCo threaded bbl · Hornady Critical Duty 135gr +P FlexLock · RMR milled slide · HOB est. 1.6\""
+  }
+  ,{
+    "id": "builtin-ap5p-acro",
+    "name": "AP5-P · Acro · AE 147gr",
+    "caliber": "9mm",
+    "type": "sbr",
+    "mv": 1010,
+    "bw": 147,
+    "bc": 0.170,
+    "hob": 1.5,
+    "unit": "moa",
+    "cpv": 1,
+    "optic": "reddot",
+    "upDir": "cw",
+    "rightDir": "cw",
+    "builtin": true,
+    "notes": "Century Arms AP5-P · 4.6\" barrel · Federal AE 147gr FMJ · Aimpoint Acro co-witnessed with iron sights · HOB from iron sight line ~1.5\""
+  }
+  ,{
+    "id": "builtin-p320-xfive-dpp",
+    "name": "P320 X5 Legion · DPP · Syntech 124gr",
+    "caliber": "9mm",
+    "type": "pistol",
+    "mv": 1100,
+    "bw": 124,
+    "bc": 0.135,
+    "hob": 1.6,
+    "unit": "moa",
+    "cpv": 1,
+    "optic": "reddot",
+    "upDir": "cw",
+    "rightDir": "cw",
+    "builtin": true,
+    "notes": "Sig P320 X-Five Legion · 5\" barrel · Federal Syntech 124gr TSJ · Leupold DeltaPoint Pro · MV est. · HOB est. 1.6\""
+  }
+  ,{
+    "id": "builtin-fm9-sbr-45in-exps3",
+    "name": "FM-9 4.5\" SBR · EXPS3-0 · AE 147gr",
+    "caliber": "9mm",
+    "type": "sbr",
+    "mv": 1010,
+    "bw": 147,
+    "bc": 0.170,
+    "hob": 2.5,
+    "unit": "moa",
+    "cpv": 2,
+    "optic": "reddot",
+    "upDir": "cw",
+    "rightDir": "cw",
+    "builtin": true,
+    "notes": "Foxtrot Mike FM-9 upper · 4.5\" barrel · Federal AE 147gr FMJ · Eotech EXPS3-0 · MV est. · HOB est. 2.5\""
+  }
+  ,{
+    "id": "builtin-mpx-8in-exps3",
+    "name": "MPX 8\" Gen2 · EXPS3-0 · AE 147gr",
+    "caliber": "9mm",
+    "type": "sbr",
+    "mv": 1090,
+    "bw": 147,
+    "bc": 0.170,
+    "hob": 2.5,
+    "unit": "moa",
+    "cpv": 2,
+    "optic": "reddot",
+    "upDir": "cw",
+    "rightDir": "cw",
+    "builtin": true,
+    "notes": "Sig MPX Gen2 · 8\" barrel · Federal AE 147gr FMJ · Eotech EXPS3-0 · MV est. from 8\" bbl · HOB est. 2.5\""
+  }
+]

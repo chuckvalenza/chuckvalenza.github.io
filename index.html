@@ -636,6 +636,17 @@ td.neg { color: var(--red); }
   margin-bottom: 12px;
 }
 
+.field-sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+  font-weight: 400;
+  text-transform: none;
+}
+
 /* Scroll arrow for tables */
 .scroll-hint {
   font-family: var(--mono);
@@ -698,6 +709,7 @@ td.neg { color: var(--red); }
       <div class="field">
         <label>Firearm Type</label>
         <select id="q-type">
+          <option value="subcompact">Subcompact</option>
           <option value="pistol">Pistol</option>
           <option value="sbr">SBR</option>
           <option value="rifle">Rifle</option>
@@ -739,13 +751,8 @@ td.neg { color: var(--red); }
 
     <div class="row2">
       <div class="field">
-        <label>Clicks Per Unit</label>
-        <select id="q-cpv">
-          <option value="4">4 (¼ MOA)</option>
-          <option value="2">2 (½ MOA)</option>
-          <option value="1">1 (1 MOA)</option>
-          <option value="10">10 (0.1 MRAD)</option>
-        </select>
+        <label>Clicks Per Unit (e.g. 4 = ¼MOA, 1 = 1MOA, 3 = 3MOA)</label>
+        <input type="number" id="q-cpv" value="1" min="1" max="20" step="1" inputmode="numeric">
       </div>
       <div class="field">
         <label>Optic Type</label>
@@ -780,24 +787,23 @@ td.neg { color: var(--red); }
     <!-- Zero Setup -->
     <div class="sec-head">Zero Setup</div>
 
+    <div class="adv-note">Shoot a group and measure where it landed relative to your aim point. Enter the offset below — the app gives you the exact clicks to move the reticle onto that group.</div>
+
     <div class="row2">
       <div class="field">
-        <label>Zero Range (yd)</label>
-        <div class="toggle-group">
-          <button id="q-zero-25" class="active" onclick="setZero(25)">25 YD</button>
-          <button id="q-zero-100" onclick="setZero(100)">100 YD</button>
-        </div>
+        <label>Zero Range (yd)<span class="field-sub">auto-set on profile load</span></label>
+        <input type="number" id="q-zero-range" value="25" min="1" step="1" inputmode="numeric" oninput="state.zeroRange = +this.value || 25">
       </div>
       <div class="field">
-        <label>Shot Impact Low/High (in)</label>
-        <input type="number" id="q-impact-v" value="0" step="0.25" inputmode="decimal" placeholder="+ high / - low">
+        <label>Vertical offset (in)<span class="field-sub">+ shots hit HIGH &nbsp;·&nbsp; − shots hit LOW</span></label>
+        <input type="number" id="q-impact-v" value="0" step="0.25" inputmode="decimal" placeholder="0">
       </div>
     </div>
 
     <div class="row2">
       <div class="field">
-        <label>Shot Impact Left/Right (in)</label>
-        <input type="number" id="q-impact-h" value="0" step="0.25" inputmode="decimal" placeholder="+ right / - left">
+        <label>Horizontal offset (in)<span class="field-sub">+ shots hit RIGHT &nbsp;·&nbsp; − shots hit LEFT</span></label>
+        <input type="number" id="q-impact-h" value="0" step="0.25" inputmode="decimal" placeholder="0">
       </div>
       <div class="field">
         <label>Shooting Distance (yd)</label>
@@ -997,6 +1003,7 @@ td.neg { color: var(--red); }
         <div class="field">
           <label>Type</label>
           <select id="p-type">
+            <option value="subcompact">Subcompact</option>
             <option value="pistol">Pistol</option>
             <option value="sbr">SBR</option>
             <option value="rifle">Rifle</option>
@@ -1035,13 +1042,8 @@ td.neg { color: var(--red); }
 
       <div class="row2">
         <div class="field">
-          <label>Clicks / Unit</label>
-          <select id="p-cpv">
-            <option value="4">4 (¼ MOA)</option>
-            <option value="2">2 (½ MOA)</option>
-            <option value="1">1 (1 MOA)</option>
-            <option value="10">10 (0.1 MRAD)</option>
-          </select>
+          <label>Clicks / Unit (e.g. 1 = 1MOA, 4 = ¼MOA, 3 = 3MOA)</label>
+          <input type="number" id="p-cpv" value="1" min="1" max="20" step="1" inputmode="numeric">
         </div>
         <div class="field">
           <label>Optic Type</label>
@@ -1464,6 +1466,167 @@ function calculateAdvanced() {
   document.getElementById('adv-results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+// ===== BUILT-IN PROFILES =====
+// Add more profiles here as JSON objects and they will appear automatically.
+// These are read-only — users cannot delete them.
+const BUILTIN_PROFILES = [
+  {
+    id: 'builtin-p365-rmrcc',
+    name: 'P365 Nitron · RMRCC · Crit Duty +P',
+    caliber: '9mm',
+    type: 'subcompact',
+    // Sig P365 Nitron Compact: 3.1" barrel
+    // Hornady Critical Duty 9mm +P 135gr FlexLock
+    // Published MV: 1110 fps from 4" test barrel
+    // Estimated MV from 3.1" barrel: ~1020 fps (approx -25fps per 0.1" under 4")
+    mv: 1020,
+    bw: 135,
+    // G1 BC for Hornady 135gr FlexLock ~0.155 (estimated from published data)
+    bc: 0.155,
+    // RMRcc milled directly into slide: ~0.875" HOB
+    // (slide top ~0.7" above bore + optic body ~0.3" - mill depth ~0.125")
+    hob: 0.875,
+    // RMRcc: 1 MOA per click
+    unit: 'moa',
+    cpv: 1,
+    optic: 'reddot',
+    // Standard RMRcc convention: UP = CCW, RIGHT = CW
+    upDir: 'ccw',
+    rightDir: 'cw',
+    builtin: true,
+    notes: 'Hornady Critical Duty 135gr +P · 3.1" barrel · RMRcc milled slide'
+  },
+  {
+    id: 'builtin-mpx-8in-exps3',
+    name: 'MPX 8" Gen2 · EXPS3-0 · AE 147gr',
+    caliber: '9mm',
+    type: 'sbr',
+    // Sig MPX Gen2: 8" barrel
+    // Federal American Eagle 9mm Luger 147gr FMJ
+    // Published MV: 1000 fps from 4" test barrel
+    // Estimated MV from 8" barrel: ~1090 fps (~22 fps/in gain)
+    mv: 1090,
+    bw: 147,
+    // G1 BC for 147gr round-nose FMJ ~0.170
+    bc: 0.170,
+    // Eotech EXPS3-0 on MPX flat-top rail
+    // MPX bore to rail ~1.5" + EXPS3-0 optical center ~1.0" above rail = ~2.5" HOB
+    hob: 2.5,
+    // Eotech EXPS3-0: 1/2 MOA per click = cpv 2
+    unit: 'moa',
+    cpv: 2,
+    optic: 'reddot',
+    // Eotech EXPS3-0: CW = UP (elevation), CW = RIGHT (windage)
+    upDir: 'cw',
+    rightDir: 'cw',
+    builtin: true,
+    notes: 'Federal AE 147gr FMJ · 8" barrel · Eotech EXPS3-0 · MV est. from 8" bbl · HOB est. 2.5"'
+  },
+  {
+    id: 'builtin-p226-legion-rmr',
+    name: 'P226 Legion · RMR · Crit Duty +P',
+    caliber: '9mm',
+    type: 'pistol',
+    // Sig P226 Legion: 4.4" barrel (SilencerCo threaded barrel, same rifled length)
+    // Hornady Critical Duty 9mm +P 135gr FlexLock
+    // Published MV: 1110 fps from 4" test barrel
+    // Estimated MV from 4.4" barrel: ~1125 fps
+    mv: 1125,
+    bw: 135,
+    // G1 BC for Hornady 135gr FlexLock ~0.155
+    bc: 0.155,
+    // Trijicon RMR milled into P226 slide
+    // P226 bore to slide top ~1.15" + RMR optical center ~0.5" above slide = ~1.6" HOB
+    hob: 1.6,
+    // Trijicon RMR: 1 MOA per click
+    unit: 'moa',
+    cpv: 1,
+    optic: 'reddot',
+    // Standard RMR convention: UP = CCW, RIGHT = CW
+    upDir: 'ccw',
+    rightDir: 'cw',
+    builtin: true,
+    notes: 'Hornady Critical Duty 135gr +P · 4.4" SilencerCo threaded bbl · RMR milled slide · HOB est. 1.6"'
+  },
+  {
+    id: 'builtin-fm9-sbr-45in-exps3',
+    name: 'FM-9 4.5" SBR · EXPS3-0 · AE 147gr',
+    caliber: '9mm',
+    type: 'sbr',
+    // Foxtrot Mike FM-9 upper on AR lower: 4.5" barrel
+    // Federal American Eagle 9mm Luger 147gr FMJ
+    // Published MV: 1000 fps from 4" test barrel
+    // Estimated MV from 4.5" barrel: ~1010 fps (~22 fps/in gain)
+    mv: 1010,
+    bw: 147,
+    // G1 BC for 147gr round-nose FMJ ~0.170
+    bc: 0.170,
+    // Eotech EXPS3-0 on AR-style flat-top rail
+    // Standard AR bore to rail ~1.5" + EXPS3-0 optical center ~1.0" above rail = ~2.5" HOB
+    hob: 2.5,
+    // Eotech EXPS3-0: 1/2 MOA per click = cpv 2
+    unit: 'moa',
+    cpv: 2,
+    optic: 'reddot',
+    // Eotech EXPS3-0: CW = UP (elevation), CW = RIGHT (windage)
+    upDir: 'cw',
+    rightDir: 'cw',
+    builtin: true,
+    notes: 'Federal AE 147gr FMJ · FM-9 upper · 4.5" barrel · Eotech EXPS3-0 · MV est. · HOB est. 2.5"'
+  },
+  {
+    id: 'builtin-p320-xfive-dpp',
+    name: 'P320 X5 Legion · DPP · Syntech 124gr',
+    caliber: '9mm',
+    type: 'pistol',
+    // Sig P320 X-Five Legion: 5" barrel
+    // Federal Syntech 124gr TSJ (flat-nose)
+    // Estimated MV from 5" barrel: ~1100 fps
+    mv: 1100,
+    bw: 124,
+    // G1 BC for 124gr Syntech TSJ (truncated/flat nose): ~0.135
+    bc: 0.135,
+    // Leupold DeltaPoint Pro in P320 X-Five optic cut
+    // P320 X-Five bore to slide top ~1.1" + DPP optical center ~0.5" above slide = ~1.6" HOB
+    hob: 1.6,
+    // Leupold DeltaPoint Pro: 1 MOA per click
+    unit: 'moa',
+    cpv: 1,
+    optic: 'reddot',
+    // DeltaPoint Pro: CW = UP (elevation), CW = RIGHT (windage)
+    upDir: 'cw',
+    rightDir: 'cw',
+    builtin: true,
+    notes: 'Federal Syntech 124gr TSJ · 5" barrel · Leupold DeltaPoint Pro · MV est. · HOB est. 1.6"'
+  },
+  {
+    id: 'builtin-ap5p-acro',
+    name: 'AP5-P · Acro · AE 147gr',
+    caliber: '9mm',
+    type: 'sbr',
+    // Century Arms AP5-P (MP5K clone): 4.6" barrel
+    // Federal American Eagle 9mm Luger 147gr FMJ
+    // Published MV: 1000 fps from 4" test barrel
+    // Estimated MV from 4.6" barrel: ~1010 fps
+    mv: 1010,
+    bw: 147,
+    // G1 BC for 147gr round-nose FMJ ~0.170
+    bc: 0.170,
+    // Aimpoint Acro co-witnessed with MP5-style iron sights
+    // MP5/AP5 iron sight line ~1.5" above bore — co-witness puts Acro optical center at same height
+    hob: 1.5,
+    // Aimpoint Acro: 1 MOA per click
+    unit: 'moa',
+    cpv: 1,
+    optic: 'reddot',
+    // Aimpoint Acro: CW = UP (elevation), CW = RIGHT (windage)
+    upDir: 'cw',
+    rightDir: 'cw',
+    builtin: true,
+    notes: 'Federal AE 147gr FMJ · Century Arms AP5-P 4.6" · Aimpoint Acro co-witness · HOB from iron sight line ~1.5"'
+  }
+];
+
 // ===== PROFILES =====
 function loadProfiles() {
   try {
@@ -1504,6 +1667,7 @@ function saveProfile() {
 }
 
 function deleteProfile(id) {
+  if (String(id).startsWith('builtin-')) { showToast('BUILT-IN — CANNOT DELETE'); return; }
   state.profiles = state.profiles.filter(p => p.id !== id);
   saveProfiles();
   renderProfiles();
@@ -1524,6 +1688,7 @@ function loadProfileToQuick(profile) {
   setUnit(profile.unit);
   setDir('up', profile.upDir);
   setDir('right', profile.rightDir);
+  setZero(defaultZeroForType(profile.type));
 
   showTab('quick');
   showToast('PROFILE LOADED');
@@ -1531,26 +1696,28 @@ function loadProfileToQuick(profile) {
 
 function renderProfiles() {
   const list = document.getElementById('profile-list');
-  if (state.profiles.length === 0) {
+  const allProfiles = [...BUILTIN_PROFILES, ...state.profiles];
+  if (allProfiles.length === 0) {
     list.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);padding:16px 0;text-align:center;letter-spacing:2px;">NO SAVED PROFILES</div>';
     return;
   }
-  list.innerHTML = state.profiles.map(p => `
+  list.innerHTML = allProfiles.map(p => `
     <div class="profile-card">
       <div class="profile-card-header">
         <div>
-          <div class="profile-card-name">${p.name}</div>
-          <div class="profile-card-type">${p.caliber} · ${p.type} · ${p.unit.toUpperCase()} · ${p.optic}</div>
+          <div class="profile-card-name">${p.name}${p.builtin ? ' <span style="font-size:11px;color:var(--text-dim)">🔒</span>' : ''}</div>
+          <div class="profile-card-type">${p.caliber} · ${p.type} · ${(p.unit||'moa').toUpperCase()} · ${p.optic}</div>
         </div>
-        <button class="delete-btn" onclick="deleteProfile(${p.id})">✕</button>
+        ${p.builtin ? '<span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px;">BUILT-IN</span>' : `<button class="delete-btn" onclick="deleteProfile(${p.id})">✕</button>`}
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
         <span class="badge">${p.mv} fps</span>
         <span class="badge">${p.bw}gr</span>
         <span class="badge">BC ${p.bc}</span>
         <span class="badge">HOB ${p.hob}"</span>
-        <span class="badge">${p.cpv} clicks/unit</span>
+        <span class="badge">${p.cpv} click/unit</span>
       </div>
+      ${p.notes ? `<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px;">${p.notes}</div>` : ''}
       <button class="save-btn" onclick='loadProfileToQuick(${JSON.stringify(p)})'>LOAD TO QUICK ZERO</button>
     </div>
   `).join('');
@@ -1558,9 +1725,10 @@ function renderProfiles() {
 
 function renderQuickProfiles() {
   const row = document.getElementById('quickProfileRow');
+  const allProfiles = [...BUILTIN_PROFILES, ...state.profiles];
   let html = '';
-  state.profiles.forEach(p => {
-    html += `<div class="profile-chip" onclick='loadProfileToQuick(${JSON.stringify(p)})'>${p.name}</div>`;
+  allProfiles.forEach(p => {
+    html += `<div class="profile-chip${p.builtin ? ' active' : ''}" onclick='loadProfileToQuick(${JSON.stringify(p).replace(/'/g, "&#39;")})'>${p.name}</div>`;
   });
   html += `<div class="profile-chip add" onclick="showTab('profiles')">+ ADD</div>`;
   row.innerHTML = html;
@@ -1579,13 +1747,6 @@ function setUnit(u) {
   state.unit = u;
   document.getElementById('q-unit-moa').classList.toggle('active', u === 'moa');
   document.getElementById('q-unit-mrad').classList.toggle('active', u === 'mrad');
-  // Update CPV options
-  const cpv = document.getElementById('q-cpv');
-  if (u === 'mrad') {
-    cpv.innerHTML = '<option value="10">10 (0.1 MRAD)</option><option value="5">5 (0.2 MRAD)</option><option value="1">1 (1 MRAD)</option>';
-  } else {
-    cpv.innerHTML = '<option value="4">4 (¼ MOA)</option><option value="2">2 (½ MOA)</option><option value="1">1 (1 MOA)</option>';
-  }
 }
 
 function setDir(axis, dir) {
@@ -1600,10 +1761,17 @@ function setDir(axis, dir) {
   }
 }
 
+function defaultZeroForType(type) {
+  if (type === 'rifle') return 100;
+  if (type === 'sbr') return 50;
+  if (type === 'pistol') return 25;
+  if (type === 'subcompact') return 10;
+  return 25;
+}
+
 function setZero(r) {
   state.zeroRange = r;
-  document.getElementById('q-zero-25').classList.toggle('active', r === 25);
-  document.getElementById('q-zero-100').classList.toggle('active', r === 100);
+  document.getElementById('q-zero-range').value = r;
   document.getElementById('q-shoot-dist').value = r;
 }
 
@@ -1639,12 +1807,8 @@ function quickCaliberChange() {
   document.getElementById('q-bc').value = p.bc;
   document.getElementById('q-hob').value = p.hob;
   document.getElementById('q-type').value = p.type;
-  setUnit(p.cpv === 10 ? 'mrad' : 'moa');
-  const cpv = document.getElementById('q-cpv');
-  if (p.cpv <= 4) {
-    cpv.innerHTML = '<option value="4">4 (¼ MOA)</option><option value="2">2 (½ MOA)</option><option value="1">1 (1 MOA)</option>';
-    cpv.value = p.cpv;
-  }
+  setUnit(p.unit || 'moa');
+  document.getElementById('q-cpv').value = p.cpv;
 }
 
 function profileCaliberChange() {
